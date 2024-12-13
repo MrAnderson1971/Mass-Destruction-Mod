@@ -1,9 +1,14 @@
 package com.example.examplemod.event;
 
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
 
 import java.util.HashMap;
 
@@ -74,8 +79,40 @@ public class CalculateMass {
     public static double calculateInventoryMass(Player player) {
         double mass = BODY_MASS;
         for (ItemStack stack : player.getInventory().items) {
-            mass += itemMassMap.getOrDefault(stack.getItem(), 1.0) * stack.getCount();
+            mass += calculateItemMass(stack);
         }
         return mass;
+    }
+
+    private static double calculateItemMass(ItemStack stack) {
+        double itemMass = itemMassMap.getOrDefault(stack.getItem(), 1.0) * stack.getCount();
+
+        // Check if the item is a shulker box
+        if (isShulkerBox(stack)) {
+            // Get the contents of the shulker box
+            NonNullList<ItemStack> shulkerContents = getShulkerContents(stack);
+            for (ItemStack nestedStack : shulkerContents) {
+                itemMass += calculateItemMass(nestedStack);
+            }
+        }
+        return itemMass;
+    }
+
+    // Helper method to check if the ItemStack is a shulker box
+    private static boolean isShulkerBox(ItemStack stack) {
+        return stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock() instanceof ShulkerBoxBlock;
+    }
+
+    // Helper method to get the contents of a shulker box
+    private static NonNullList<ItemStack> getShulkerContents(ItemStack stack) {
+        NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
+        if (stack.hasTag() && stack.getTag().contains("BlockEntityTag")) {
+            CompoundTag blockEntityTag = stack.getTag().getCompound("BlockEntityTag");
+            if (blockEntityTag.contains("Items")) {
+                ContainerHelper.loadAllItems(blockEntityTag, items);
+                return items;
+            }
+        }
+        return items;
     }
 }
