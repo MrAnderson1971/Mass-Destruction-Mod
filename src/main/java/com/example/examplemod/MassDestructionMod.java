@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Queue;
 
 import static com.example.examplemod.event.CalculateMass.calculateInventoryMass;
@@ -27,10 +28,9 @@ public class MassDestructionMod {
     public static final String MODID = "mass_destruction";
 
     private final HashMap<Player, Vec3> prevPositions = new HashMap<>();
-    private final HashMap<Player, Double> prevVelocities = new HashMap<>();
     private final Queue<BlockPos> explosionQueue = new LinkedList<>();
 
-    private final double TNT_ENERGY_JOULES = 4.184 * 1e6;
+    private final double TNT_ENERGY_JOULES = 6.9036e9;
     private final int EXPLOSIONS_PER_TICK = 100;
     private final double G = 31.32;
 
@@ -89,22 +89,26 @@ public class MassDestructionMod {
             Vec3 previous = prevPositions.getOrDefault(player, current);
             Vec3 displacement = current.subtract(previous);
             double speed = displacement.horizontalDistance() / 0.05;
-            double previousSpeed = prevVelocities.getOrDefault(player, speed);
-            double acceleration = Math.abs(previousSpeed - speed) / 0.05;
 
             prevPositions.put(player, current);
-            prevVelocities.put(player, speed);
 
             // Predict next position
             AABB predictedAABB = player.getBoundingBox();
+            Optional<AABB> vehicleAABB = player.getVehicle() == null ? Optional.empty() :
+                    Optional.of(player.getVehicle().getBoundingBox());
 
             // Check collision with predicted AABB
-            boolean aboutToCollide = sl.getEntities(player, predictedAABB, entity -> entity instanceof LivingEntity && entity != player)
+            boolean aboutToCollide = sl.getEntities(player, predictedAABB, entity ->
+                            entity instanceof LivingEntity && entity != player && entity != player.getVehicle())
                     .stream()
                     .findAny()
                     .isPresent();
+            boolean vehicleAboutToCollide = vehicleAABB.map(aabb -> sl.getEntities(player.getVehicle(), aabb, entity -> entity instanceof LivingEntity && entity != player)
+                    .stream()
+                    .findAny()
+                    .isPresent()).orElse(false);
 
-            if (aboutToCollide) {
+            if (aboutToCollide || vehicleAboutToCollide) {
                 double mass = calculateInventoryMass(player);
                 double kineticEnergy = 0.5 * mass * speed * speed; // Joules
 
