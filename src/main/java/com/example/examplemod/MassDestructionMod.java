@@ -103,7 +103,8 @@ public class MassDestructionMod {
                     .stream()
                     .findAny()
                     .isPresent();
-            boolean vehicleAboutToCollide = vehicleAABB.map(aabb -> sl.getEntities(player.getVehicle(), aabb, entity -> entity instanceof LivingEntity && entity != player)
+            boolean vehicleAboutToCollide = vehicleAABB.map(aabb -> sl.getEntities(player.getVehicle(), aabb,
+                            entity -> entity instanceof LivingEntity && entity != player && entity != player.getVehicle())
                     .stream()
                     .findAny()
                     .isPresent()).orElse(false);
