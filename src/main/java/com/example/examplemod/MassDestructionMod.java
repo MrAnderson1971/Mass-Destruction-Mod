@@ -109,7 +109,7 @@ public class MassDestructionMod {
                     .findAny()
                     .isPresent()).orElse(false);
 
-            if (aboutToCollide || vehicleAboutToCollide) {
+            if (aboutToCollide || vehicleAboutToCollide || player.horizontalCollision) {
                 double mass = calculateInventoryMass(player);
                 double kineticEnergy = 0.5 * mass * speed * speed; // Joules
 
