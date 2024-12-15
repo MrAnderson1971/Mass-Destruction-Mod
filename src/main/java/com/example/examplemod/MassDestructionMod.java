@@ -88,7 +88,7 @@ public class MassDestructionMod {
             Vec3 current = player.position();
             Vec3 previous = prevPositions.getOrDefault(player, current);
             Vec3 displacement = current.subtract(previous);
-            double speed = displacement.horizontalDistance() / 0.05;
+            double speed = displacement.length() / 0.05;
 
             prevPositions.put(player, current);
 
